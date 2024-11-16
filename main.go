@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	conf_path := flag.String("c", "conf.json", "config json file")
+	conf_path := flag.String("c", "config.json", "config json file")
 	flag.Parse()
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -26,8 +26,8 @@ func main() {
 
 	conf.MarginWithENV()
 
-	pkg.Log.Debug("show config detail:")
-	pkg.Log.Debug(conf.ToJSON())
+	pkg.Log.Info("show config detail:")
+	pkg.Log.Info(conf.ToJSON())
 
 	service := pkg.NewHttpService(conf)
 	service.Start()

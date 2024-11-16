@@ -23,7 +23,7 @@ func TestBedrockClient_CompleteTextWithStream(t *testing.T) {
 		Temperature:       0.5,
 		MaxTokensToSample: 2048,
 		Stream:            true,
-		Model:             "anthropic.claude-v2:1",
+		Model:             "sonnet:3.5",
 	})
 
 	if err != nil {
@@ -80,7 +80,6 @@ func TestBedrockClient_MessageCompletionWithoutStream(t *testing.T) {
 	config := GetBedrockTestConfig()
 
 	t.Log(tests.ToJSON(config))
-
 
 	client := NewBedrockClient(config)
 
@@ -156,7 +155,7 @@ func TestBedrockClient_MessageCompletionWithStream(t *testing.T) {
 		AnthropicVersion: "bedrock-2023-05-31",
 		Messages: []*ClaudeMessageCompletionRequestMessage{
 			&ClaudeMessageCompletionRequestMessage{
-				Role: "user",
+				Role:    "user",
 				Content: bin,
 			},
 		},

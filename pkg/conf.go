@@ -29,6 +29,36 @@ func (this *Config) MarginWithENV() {
 	}
 	if this.BedrockConfig == nil {
 		this.BedrockConfig = LoadBedrockConfigWithEnv()
+	} else {
+		envBedrockConfig := LoadBedrockConfigWithEnv()
+
+		if envBedrockConfig.AccessKey != "" {
+			this.BedrockConfig.AccessKey = envBedrockConfig.AccessKey
+		}
+		if envBedrockConfig.SecretKey != "" {
+			this.BedrockConfig.SecretKey = envBedrockConfig.SecretKey
+		}
+		if envBedrockConfig.Region != "" {
+			this.BedrockConfig.Region = envBedrockConfig.Region
+		}
+		if envBedrockConfig.RoleArn != "" {
+			this.BedrockConfig.RoleArn = envBedrockConfig.RoleArn
+		}
+		if envBedrockConfig.RoleRegion != "" {
+			this.BedrockConfig.RoleRegion = envBedrockConfig.RoleRegion
+		}
+		if len(envBedrockConfig.ModelMappings) > 0 {
+			this.BedrockConfig.ModelMappings = envBedrockConfig.ModelMappings
+		}
+		if len(envBedrockConfig.AnthropicVersionMappings) > 0 {
+			this.BedrockConfig.AnthropicVersionMappings = envBedrockConfig.AnthropicVersionMappings
+		}
+		if envBedrockConfig.AnthropicDefaultModel != "" {
+			this.BedrockConfig.AnthropicDefaultModel = envBedrockConfig.AnthropicDefaultModel
+		}
+		if envBedrockConfig.AnthropicDefaultVersion != "" {
+			this.BedrockConfig.AnthropicDefaultVersion = envBedrockConfig.AnthropicDefaultVersion
+		}
 	}
 }
 

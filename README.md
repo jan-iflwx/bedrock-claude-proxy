@@ -69,17 +69,53 @@ Before you begin, ensure you have met the following requirements:
     ```bash
     go build -o bedrock-claude-proxy
     ```
+2. **Config the environ:** 
 
-2. **Start the proxy server:**
+    在`~/.bashrc`中，添加如下环境变量：
+
+    ```shell
+    export AWS_BEDROCK_ACCESS_KEY=your_access_key
+    export AWS_BEDROCK_SECRET_KEY=your_secret_key
+    export AWS_BEDROCK_REGION=your_region
+    export AWS_BEDROCK_ROLE_ARN=your_role_arn
+    export AWS_BEDROCK_ROLE_REGION=your_role_region
+    ```
+    
+    新起一个Terminal以确保环境变量生效，可用`env | grep AWS`来验证
+
+3. **Start the proxy server:**
 
     ```bash
     ./bedrock-claude-proxy
     ```
 
-3. **Make API requests to the proxy:**
+4. **Make API requests to the proxy:**
 
    Point your Anthropic API client to the proxy server. For example, if the proxy is running on `http://localhost:3000`, configure your client to use this base URL.
 
+    - python example
+    ```python
+    from langchain_anthropic import ChatAnthropic
+    # method 1
+    os.environ["ANTHROPIC_API_URL"]="http://localhost:3000"
+    os.environ["ANTHROPIC_API_KEY"]="test123"
+    ChatAnthropic(model="sonnet3.5").invoke("hello")
+    # method 2
+    model = ChatAnthropic(
+        model="sonnet3.5",
+        base_url="http://localhost:3000",
+        api_key="test123"
+    )
+    model.invoke("why sky is blue")
+    # method 3
+    # 从本地访问github codespace中的服务时，需要先`open in browser`以获取其地址，再`make it public`使其从外部可访问
+    ```
+
+4. related resources
+- [anthropic_api](https://docs.anthropic.com/en/api/messages)
+- [bedrock-claude-model-parameters](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-overview)
+- [langchain_anthropic/chat_models.py](https://github.com/langchain-ai/langchain/blob/master/libs/partners/anthropic/langchain_anthropic/chat_models.py)
+- [API_runtime_InvokeModelWithResponseStream](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModelWithResponseStream.html)
 
 ### Running with Docker
 

@@ -14,12 +14,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	bedrock "github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 type BedrockConfig struct {
 	AccessKey                string            `json:"access_key"`
 	SecretKey                string            `json:"secret_key"`
 	Region                   string            `json:"region"`
+	RoleArn                  string            `json:"role_arn"`
+	RoleRegion               string            `json:"role_region"`
 	AnthropicVersionMappings map[string]string `json:"anthropic_version_mappings"`
 	ModelMappings            map[string]string `json:"model_mappings"`
 	AnthropicDefaultModel    string            `json:"anthropic_default_model"`
@@ -56,6 +59,8 @@ func LoadBedrockConfigWithEnv() *BedrockConfig {
 		AccessKey:                os.Getenv("AWS_BEDROCK_ACCESS_KEY"),
 		SecretKey:                os.Getenv("AWS_BEDROCK_SECRET_KEY"),
 		Region:                   os.Getenv("AWS_BEDROCK_REGION"),
+		RoleArn:                  os.Getenv("AWS_BEDROCK_ROLE_ARN"),
+		RoleRegion:               os.Getenv("AWS_BEDROCK_ROLE_REGION"),
 		ModelMappings:            ParseMappingsFromStr(os.Getenv("AWS_BEDROCK_MODEL_MAPPINGS")),
 		AnthropicVersionMappings: ParseMappingsFromStr(os.Getenv("AWS_BEDROCK_ANTHROPIC_VERSION_MAPPINGS")),
 		AnthropicDefaultModel:    os.Getenv("AWS_BEDROCK_ANTHROPIC_DEFAULT_MODEL"),
@@ -403,9 +408,49 @@ func NewBedrockClient(config *BedrockConfig) *BedrockClient {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
+	// if not set RoleArn
+	if config.RoleArn == "" {
+		return &BedrockClient{
+			config: config,
+			client: bedrock.NewFromConfig(cfg),
+		}
+	}
+
+	// ===== assume role ======
+	stsSvc := sts.NewFromConfig(cfg)
+
+	// Assume role
+	input := &sts.AssumeRoleInput{
+		RoleArn:         aws.String(config.RoleArn),
+		RoleSessionName: aws.String("bedrockruntime-session"),
+	}
+	result, err := stsSvc.AssumeRole(context.TODO(), input)
+	if err != nil {
+		log.Fatalf("unable to assume role, %v", err)
+		return nil
+	}
+
+	// Use assumed role to create new credentials
+	assumedCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+		*result.Credentials.AccessKeyId,
+		*result.Credentials.SecretAccessKey,
+		*result.Credentials.SessionToken,
+	))
+
+	// Create a BedrockRuntime client using the assumed role credentials
+	bedrock_cfg, err := awsConfig.LoadDefaultConfig(
+		context.TODO(),
+		awsConfig.WithRegion(config.RoleRegion),
+		awsConfig.WithCredentialsProvider(assumedCreds),
+	)
+	if err != nil {
+		log.Fatalf("unable to create bedrock runtime with assummed role, %v", err)
+		return nil
+	}
+
 	return &BedrockClient{
 		config: config,
-		client: bedrock.NewFromConfig(cfg),
+		client: bedrock.NewFromConfig(bedrock_cfg),
 	}
 }
 
