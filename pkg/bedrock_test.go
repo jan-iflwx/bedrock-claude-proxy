@@ -2,15 +2,16 @@ package pkg
 
 import (
 	"bedrock-claude-proxy/tests"
-	_ "bedrock-claude-proxy/tests"
 	"encoding/json"
 	"testing"
 )
 
+// 仅从环境变量中加载测试配置
 func GetBedrockTestConfig() *BedrockConfig {
 	return LoadBedrockConfigWithEnv()
 }
 
+// 测试：流式调用
 func TestBedrockClient_CompleteTextWithStream(t *testing.T) {
 	config := GetBedrockTestConfig()
 
@@ -86,7 +87,7 @@ func TestBedrockClient_MessageCompletionWithoutStream(t *testing.T) {
 	prompt := "創作一首7言律詩"
 
 	bin, err := json.Marshal([]*ClaudeMessageCompletionRequestContent{
-		&ClaudeMessageCompletionRequestContent{
+		{
 			Type: "text",
 			Text: prompt,
 		},
@@ -106,7 +107,7 @@ func TestBedrockClient_MessageCompletionWithoutStream(t *testing.T) {
 		System:           "You are a helpful assistant.",
 		AnthropicVersion: "bedrock-2023-05-31",
 		Messages: []*ClaudeMessageCompletionRequestMessage{
-			&ClaudeMessageCompletionRequestMessage{
+			{
 				Role:    "user",
 				Content: bin,
 			},
@@ -136,7 +137,7 @@ func TestBedrockClient_MessageCompletionWithStream(t *testing.T) {
 	prompt := "創作一首7言律詩"
 
 	bin, err := json.Marshal([]*ClaudeMessageCompletionRequestContent{
-		&ClaudeMessageCompletionRequestContent{
+		{
 			Type: "text",
 			Text: prompt,
 		},

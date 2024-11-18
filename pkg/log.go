@@ -9,8 +9,7 @@ var Log = logging.MustGetLogger("BedrockProxy")
 
 func init() {
 	format := logging.MustStringFormatter(
-		`BedrockProxy %{color} %{shortfunc} %{level:.4s} %{shortfile}
-%{id:03x}%{color:reset} %{message}`,
+		`BedrockProxy %{color} %{shortfunc} %{level:.4s} %{shortfile} %{id:03x}%{color:reset} %{message}`,
 	)
 	logging.SetFormatter(format)
 	levelStr := os.Getenv("LOG_LEVEL")

@@ -29,11 +29,11 @@ type BedrockConfig struct {
 	AnthropicDefaultVersion  string            `json:"anthropic_default_version"`
 }
 
-func (this *BedrockConfig) GetInvokeEndpoint(modelId string) string {
-	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke", this.Region, modelId)
+func (config *BedrockConfig) GetInvokeEndpoint(modelId string) string {
+	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke", config.Region, modelId)
 }
 
-func (this *BedrockConfig) GetInvokeStreamEndpoint(modelId string, region string) string {
+func (config *BedrockConfig) GetInvokeStreamEndpoint(modelId string, region string) string {
 	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke-with-response-stream", region, modelId)
 }
 
@@ -84,7 +84,7 @@ type ClaudeTextCompletionRequest struct {
 	Model             string   `json:"-"`
 }
 
-func (this *ClaudeTextCompletionRequest) UnmarshalJSON(data []byte) error {
+func (request *ClaudeTextCompletionRequest) UnmarshalJSON(data []byte) error {
 	type Alias ClaudeTextCompletionRequest
 	tmp := &struct {
 		*Alias
@@ -93,14 +93,14 @@ func (this *ClaudeTextCompletionRequest) UnmarshalJSON(data []byte) error {
 		Model  string `json:"model"`
 	}{
 		Stream: false,
-		Alias:  (*Alias)(this),
+		Alias:  (*Alias)(request),
 	}
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 
-	this.Stream = tmp.Stream
-	this.Model = tmp.Model
+	request.Stream = tmp.Stream
+	request.Model = tmp.Model
 
 	//Log.Debug("ClaudeTextCompletionRequest UnmarshalJSON")
 	//Log.Debug(tests.ToJSON(tmp))
@@ -148,9 +148,14 @@ type ClaudeMessageCompletionRequestPropertiesItem struct {
 }
 
 type ClaudeMessageCompletionRequestTools struct {
+	Type        string                                     `json:"type,omitempty"`
 	Name        string                                     `json:"name,omitempty"`
 	Description string                                     `json:"description,omitempty"`
 	InputSchema *ClaudeMessageCompletionRequestInputSchema `json:"input_schema,omitempty"`
+	// add for computer use
+	DisplayHeightPx int                                    `json:"display_height_px,omitempty"`
+	DisplayWidthPx int                                     `json:"display_width_px,omitempty"`
+	DisplayNumber int                                      `json:"display_number,omitempty"`
 }
 
 type ClaudeMessageCompletionRequest struct {
@@ -161,6 +166,7 @@ type ClaudeMessageCompletionRequest struct {
 	Stream           bool                                     `json:"-"`
 	Model            string                                   `json:"-"`
 	AnthropicVersion string                                   `json:"anthropic_version,omitempty"`
+	AnthropicBeta    []string                                 `json:"anthropic_beta,omitempty"`
 	MaxToken         int                                      `json:"max_tokens,omitempty"`
 	System           string                                   `json:"system,omitempty"`
 	Messages         []*ClaudeMessageCompletionRequestMessage `json:"messages,omitempty"`
@@ -168,7 +174,7 @@ type ClaudeMessageCompletionRequest struct {
 	Tools            []*ClaudeMessageCompletionRequestTools   `json:"tools,omitempty"`
 }
 
-func (this *ClaudeMessageCompletionRequest) UnmarshalJSON(data []byte) error {
+func (request *ClaudeMessageCompletionRequest) UnmarshalJSON(data []byte) error {
 	type Alias ClaudeMessageCompletionRequest
 	tmp := &struct {
 		*Alias
@@ -179,27 +185,27 @@ func (this *ClaudeMessageCompletionRequest) UnmarshalJSON(data []byte) error {
 		Tools    []*ClaudeMessageCompletionRequestTools  `json:"tools"`
 	}{
 		Stream: false,
-		Alias:  (*Alias)(this),
+		Alias:  (*Alias)(request),
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 
-	this.Metadata = tmp.Metadata
+	request.Metadata = tmp.Metadata
 	if tmp.Tools != nil {
-		this.Tools = tmp.Tools
+		request.Tools = tmp.Tools
 	} else {
-		this.Tools = []*ClaudeMessageCompletionRequestTools{}
+		request.Tools = []*ClaudeMessageCompletionRequestTools{}
 	}
-	if this.TopK < 0 {
-		this.TopK = 0
+	if request.TopK < 0 {
+		request.TopK = 0
 	}
-	if this.TopP < 0 {
-		this.TopP = 0.0
+	if request.TopP < 0 {
+		request.TopP = 0.0
 	}
-	this.Stream = tmp.Stream
-	this.Model = tmp.Model
+	request.Stream = tmp.Stream
+	request.Model = tmp.Model
 
 	//Log.Debug("ClaudeMessageCompletionRequest UnmarshalJSON")
 	//Log.Debug(tests.ToJSON(tmp))
@@ -241,16 +247,16 @@ type ClaudeTextCompletionStreamEvent struct {
 	Raw        []byte `json:"-"`
 }
 
-func (this *ClaudeTextCompletionStreamEvent) GetBytes() []byte {
-	return this.Raw
+func (event *ClaudeTextCompletionStreamEvent) GetBytes() []byte {
+	return event.Raw
 }
 
-func (this *ClaudeTextCompletionStreamEvent) GetEvent() string {
-	return this.Type
+func (event *ClaudeTextCompletionStreamEvent) GetEvent() string {
+	return event.Type
 }
 
-func (this *ClaudeTextCompletionStreamEvent) GetText() string {
-	return this.Completion
+func (event *ClaudeTextCompletionStreamEvent) GetText() string {
+	return event.Completion
 }
 
 type ClaudeMessageUsage struct {
@@ -299,19 +305,19 @@ type ClaudeMessageCompletionStreamEvent struct {
 	Raw          []byte                     `json:"-"`
 }
 
-func (this *ClaudeMessageCompletionStreamEvent) GetBytes() []byte {
-	return this.Raw
+func (event *ClaudeMessageCompletionStreamEvent) GetBytes() []byte {
+	return event.Raw
 }
 
-func (this *ClaudeMessageCompletionStreamEvent) GetEvent() string {
-	return this.Type
+func (event *ClaudeMessageCompletionStreamEvent) GetEvent() string {
+	return event.Type
 }
 
-func (this *ClaudeMessageCompletionStreamEvent) GetText() string {
-	if this.Delta != nil {
-		return this.Delta.Text
+func (event *ClaudeMessageCompletionStreamEvent) GetText() string {
+	if event.Delta != nil {
+		return event.Delta.Text
 	}
-	return this.Completion
+	return event.Completion
 }
 
 type CompleteTextResponse struct {
@@ -340,16 +346,16 @@ func NewCompleteTextResponse(response *ClaudeTextCompletionResponse) *CompleteTe
 	}
 }
 
-func (this *CompleteTextResponse) IsStream() bool {
-	return this.stream
+func (response *CompleteTextResponse) IsStream() bool {
+	return response.stream
 }
 
-func (this *CompleteTextResponse) GetResponse() interface{} {
-	return this.Response
+func (response *CompleteTextResponse) GetResponse() interface{} {
+	return response.Response
 }
 
-func (this *CompleteTextResponse) GetEvents() <-chan ISSEDecoder {
-	return this.Events
+func (response *CompleteTextResponse) GetEvents() <-chan ISSEDecoder {
+	return response.Events
 }
 
 type MessageCompleteResponse struct {
@@ -372,16 +378,16 @@ func NewMessageCompleteResponse(response *ClaudeMessageCompletionResponse) *Mess
 	}
 }
 
-func (this *MessageCompleteResponse) IsStream() bool {
-	return this.stream
+func (response *MessageCompleteResponse) IsStream() bool {
+	return response.stream
 }
 
-func (this *MessageCompleteResponse) GetResponse() interface{} {
-	return this.Response
+func (response *MessageCompleteResponse) GetResponse() interface{} {
+	return response.Response
 }
 
-func (this *MessageCompleteResponse) GetEvents() <-chan ISSEDecoder {
-	return this.Events
+func (response *MessageCompleteResponse) GetEvents() <-chan ISSEDecoder {
+	return response.Events
 }
 
 func NewSSERaw(encoder ISSEDecoder) []byte {
@@ -390,9 +396,9 @@ func NewSSERaw(encoder ISSEDecoder) []byte {
 
 type ClaudeTextCompletionStreamEventList []*ClaudeTextCompletionStreamEvent
 
-func (this *ClaudeTextCompletionStreamEventList) Completion() string {
+func (eventList *ClaudeTextCompletionStreamEventList) Completion() string {
 	var completion string
-	for _, event := range *this {
+	for _, event := range *eventList {
 		completion += event.Completion
 	}
 	return completion
@@ -454,14 +460,14 @@ func NewBedrockClient(config *BedrockConfig) *BedrockClient {
 	}
 }
 
-func (this *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (IStreamableResponse, error) {
+func (client *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (IStreamableResponse, error) {
 	modelId := req.Model
-	mappedModel, exist := this.config.ModelMappings[modelId]
+	mappedModel, exist := client.config.ModelMappings[modelId]
 	if exist {
 		modelId = mappedModel
 	}
 	if len(modelId) == 0 {
-		modelId = this.config.AnthropicDefaultModel
+		modelId = client.config.AnthropicDefaultModel
 	}
 
 	if !strings.HasSuffix(req.Prompt, "Assistant:") {
@@ -474,7 +480,7 @@ func (this *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (IStre
 	}
 
 	if req.Stream {
-		output, err := this.client.InvokeModelWithResponseStream(context.Background(), &bedrock.InvokeModelWithResponseStreamInput{
+		output, err := client.client.InvokeModelWithResponseStream(context.Background(), &bedrock.InvokeModelWithResponseStreamInput{
 			Body:        body,
 			ModelId:     aws.String(modelId),
 			ContentType: aws.String("application/json"),
@@ -521,7 +527,7 @@ func (this *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (IStre
 		return NewStreamCompleteTextResponse(eventQueue), nil
 	}
 
-	output, err := this.client.InvokeModel(context.Background(), &bedrock.InvokeModelInput{
+	output, err := client.client.InvokeModel(context.Background(), &bedrock.InvokeModelInput{
 		Body:        body,
 		ModelId:     aws.String(modelId),
 		ContentType: aws.String("application/json"),
@@ -546,21 +552,21 @@ func (this *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (IStre
 	return nil, nil
 }
 
-func (this *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionRequest) (IStreamableResponse, error) {
+func (client *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionRequest) (IStreamableResponse, error) {
 	modelId := req.Model
-	mappedModel, exist := this.config.ModelMappings[modelId]
+	mappedModel, exist := client.config.ModelMappings[modelId]
 	if exist {
 		modelId = mappedModel
 	}
 	if len(modelId) == 0 {
-		modelId = this.config.AnthropicDefaultModel
+		modelId = client.config.AnthropicDefaultModel
 	}
-	apiVersion, exist := this.config.AnthropicVersionMappings[req.AnthropicVersion]
+	apiVersion, exist := client.config.AnthropicVersionMappings[req.AnthropicVersion]
 	if exist {
 		req.AnthropicVersion = apiVersion
 	}
 	if len(req.AnthropicVersion) == 0 {
-		req.AnthropicVersion = this.config.AnthropicDefaultVersion
+		req.AnthropicVersion = client.config.AnthropicDefaultVersion
 	}
 
 	body, err := json.Marshal(req)
@@ -573,7 +579,7 @@ func (this *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionRequest
 	Log.Debugf("Request Model ID: %s", modelId)
 
 	if req.Stream {
-		output, err := this.client.InvokeModelWithResponseStream(context.Background(), &bedrock.InvokeModelWithResponseStreamInput{
+		output, err := client.client.InvokeModelWithResponseStream(context.Background(), &bedrock.InvokeModelWithResponseStreamInput{
 			Body:        body,
 			ModelId:     aws.String(modelId),
 			ContentType: aws.String("application/json"),
@@ -618,7 +624,7 @@ func (this *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionRequest
 		return NewStreamMessageCompleteResponse(eventQueue), nil
 	}
 
-	output, err := this.client.InvokeModel(context.Background(), &bedrock.InvokeModelInput{
+	output, err := client.client.InvokeModel(context.Background(), &bedrock.InvokeModelInput{
 		Body:        body,
 		ModelId:     aws.String(modelId),
 		ContentType: aws.String("application/json"),

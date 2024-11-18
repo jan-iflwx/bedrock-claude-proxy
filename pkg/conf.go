@@ -17,47 +17,47 @@ func NewConfigFromLocal(filename string) (*Config, error) {
 	return conf, err
 }
 
-func (this *Config) MarginWithENV() {
-	if len(this.WebRoot) <= 0 {
-		this.WebRoot = os.Getenv("WEB_ROOT")
+func (config *Config) MarginWithENV() {
+	if len(config.WebRoot) <= 0 {
+		config.WebRoot = os.Getenv("WEB_ROOT")
 	}
-	if len(this.Listen) <= 0 {
-		this.Listen = os.Getenv("HTTP_LISTEN")
+	if len(config.Listen) <= 0 {
+		config.Listen = os.Getenv("HTTP_LISTEN")
 	}
-	if len(this.APIKey) <= 0 {
-		this.APIKey = os.Getenv("API_KEY")
+	if len(config.APIKey) <= 0 {
+		config.APIKey = os.Getenv("API_KEY")
 	}
-	if this.BedrockConfig == nil {
-		this.BedrockConfig = LoadBedrockConfigWithEnv()
+	if config.BedrockConfig == nil {
+		config.BedrockConfig = LoadBedrockConfigWithEnv()
 	} else {
 		envBedrockConfig := LoadBedrockConfigWithEnv()
 
 		if envBedrockConfig.AccessKey != "" {
-			this.BedrockConfig.AccessKey = envBedrockConfig.AccessKey
+			config.BedrockConfig.AccessKey = envBedrockConfig.AccessKey
 		}
 		if envBedrockConfig.SecretKey != "" {
-			this.BedrockConfig.SecretKey = envBedrockConfig.SecretKey
+			config.BedrockConfig.SecretKey = envBedrockConfig.SecretKey
 		}
 		if envBedrockConfig.Region != "" {
-			this.BedrockConfig.Region = envBedrockConfig.Region
+			config.BedrockConfig.Region = envBedrockConfig.Region
 		}
 		if envBedrockConfig.RoleArn != "" {
-			this.BedrockConfig.RoleArn = envBedrockConfig.RoleArn
+			config.BedrockConfig.RoleArn = envBedrockConfig.RoleArn
 		}
 		if envBedrockConfig.RoleRegion != "" {
-			this.BedrockConfig.RoleRegion = envBedrockConfig.RoleRegion
+			config.BedrockConfig.RoleRegion = envBedrockConfig.RoleRegion
 		}
 		if len(envBedrockConfig.ModelMappings) > 0 {
-			this.BedrockConfig.ModelMappings = envBedrockConfig.ModelMappings
+			config.BedrockConfig.ModelMappings = envBedrockConfig.ModelMappings
 		}
 		if len(envBedrockConfig.AnthropicVersionMappings) > 0 {
-			this.BedrockConfig.AnthropicVersionMappings = envBedrockConfig.AnthropicVersionMappings
+			config.BedrockConfig.AnthropicVersionMappings = envBedrockConfig.AnthropicVersionMappings
 		}
 		if envBedrockConfig.AnthropicDefaultModel != "" {
-			this.BedrockConfig.AnthropicDefaultModel = envBedrockConfig.AnthropicDefaultModel
+			config.BedrockConfig.AnthropicDefaultModel = envBedrockConfig.AnthropicDefaultModel
 		}
 		if envBedrockConfig.AnthropicDefaultVersion != "" {
-			this.BedrockConfig.AnthropicDefaultVersion = envBedrockConfig.AnthropicDefaultVersion
+			config.BedrockConfig.AnthropicDefaultVersion = envBedrockConfig.AnthropicDefaultVersion
 		}
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"bedrock-claude-proxy/pkg"
 	"flag"
 	"runtime"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -24,10 +26,16 @@ func main() {
 		conf = &pkg.Config{}
 	}
 
+	// Load .env file
+	err = godotenv.Load()
+	if err != nil {
+		pkg.Log.Fatal("Error loading .env file")
+	}
+
 	conf.MarginWithENV()
 
-	pkg.Log.Info("show config detail:")
-	pkg.Log.Info(conf.ToJSON())
+	pkg.Log.Debug("show config detail:")
+	pkg.Log.Debug(conf.ToJSON())
 
 	service := pkg.NewHttpService(conf)
 	service.Start()

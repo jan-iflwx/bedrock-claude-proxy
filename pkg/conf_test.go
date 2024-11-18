@@ -54,7 +54,7 @@ func Test_SaveConfig(t *testing.T) {
 	conf := &Config{}
 	conf.MarginWithENV()
 
-	configPath := tests.GetLocalPath("../config.json")
+	configPath := tests.GetLocalPath("../conf.json")
 	err := conf.Save(configPath)
 	if err != nil {
 		t.Log(err)

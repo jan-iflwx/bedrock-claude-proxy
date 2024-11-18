@@ -71,17 +71,9 @@ Before you begin, ensure you have met the following requirements:
     ```
 2. **Config the environ:** 
 
-    在`~/.bashrc`中，添加如下环境变量：
+    `config.json`中包含模型相关配置，`.env.example`中包含AWS鉴权相关配置。
 
-    ```shell
-    export AWS_BEDROCK_ACCESS_KEY=your_access_key
-    export AWS_BEDROCK_SECRET_KEY=your_secret_key
-    export AWS_BEDROCK_REGION=your_region
-    export AWS_BEDROCK_ROLE_ARN=your_role_arn
-    export AWS_BEDROCK_ROLE_REGION=your_role_region
-    ```
-    
-    新起一个Terminal以确保环境变量生效，可用`env | grep AWS`来验证
+    将`.env.example`复制为`.env`，再修改其中的内容即可。
 
 3. **Start the proxy server:**
 
@@ -111,7 +103,13 @@ Before you begin, ensure you have met the following requirements:
     # 从本地访问github codespace中的服务时，需要先`open in browser`以获取其地址，再`make it public`使其从外部可访问
     ```
 
-4. related resources
+5. test
+```shell
+cd tests
+pytest -v -s testProxy.py
+```
+
+6. related resources
 - [anthropic_api](https://docs.anthropic.com/en/api/messages)
 - [bedrock-claude-model-parameters](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-overview)
 - [langchain_anthropic/chat_models.py](https://github.com/langchain-ai/langchain/blob/master/libs/partners/anthropic/langchain_anthropic/chat_models.py)
