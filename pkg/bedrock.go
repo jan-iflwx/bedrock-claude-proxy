@@ -168,7 +168,7 @@ type ClaudeMessageCompletionRequest struct {
 	AnthropicVersion string                                   `json:"anthropic_version,omitempty"`
 	AnthropicBeta    []string                                 `json:"anthropic_beta,omitempty"`
 	MaxToken         int                                      `json:"max_tokens,omitempty"`
-	System           string                                   `json:"system,omitempty"`
+	System           json.RawMessage                          `json:"system,omitempty"`
 	Messages         []*ClaudeMessageCompletionRequestMessage `json:"messages,omitempty"`
 	Metadata         *ClaudeMessageCompletionRequestMetadata  `json:"-"`
 	Tools            []*ClaudeMessageCompletionRequestTools   `json:"tools,omitempty"`
