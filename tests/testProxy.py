@@ -247,13 +247,36 @@ def test_computer_use(client):
 
 # 测试beta能力：count_tokens
 def test_count_tokens(client, base_message):
-    with pytest.raises(NotFoundError, match="404 page not found"):
-        client.beta.messages.count_tokens(
-            model=PROXY_MODEL_ID,
-            messages=[
-                {"role": "user", "content": base_message}
-            ]
-        )
+    #with pytest.raises(NotFoundError, match="404 page not found"):
+    response = client.beta.messages.count_tokens(
+        model=PROXY_MODEL_ID,
+        messages=[
+            {"role": "user", "content": base_message}
+        ]
+    )
+    print(response)
+    assert(response.error is None)
+
+# 测试beta能力：prompt_cache
+def test_prompt_cache(client):
+    response = client.beta.prompt_caching.messages.create(
+        model=PROXY_MODEL_ID,
+        max_tokens=1024,
+        system=[
+        {
+            "type": "text",
+            "text": "You are an AI assistant tasked with analyzing literary works. Your goal is to provide insightful commentary on themes, characters, and writing style.\n",
+        },
+        {
+            "type": "text",
+            "text": "<the entire contents of 'Pride and Prejudice'>",
+            "cache_control": {"type": "ephemeral"}
+        }
+        ],
+        messages=[{"role": "user", "content": "Analyze the major themes in 'Pride and Prejudice'."}],
+    )
+    print(response)
+    assert response.error is None
 
 # --------------
 # 3.langchain调用
