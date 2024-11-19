@@ -400,9 +400,9 @@ type ClaudeMessageCompletionRequestTools struct {
 	Description string                                     `json:"description,omitempty"`
 	InputSchema *ClaudeMessageCompletionRequestInputSchema `json:"input_schema,omitempty"`
 	// add for computer use
-	DisplayHeightPx int                                    `json:"display_height_px,omitempty"`
-	DisplayWidthPx int                                     `json:"display_width_px,omitempty"`
-	DisplayNumber int                                      `json:"display_number,omitempty"`
+	DisplayHeightPx int `json:"display_height_px,omitempty"`
+	DisplayWidthPx  int `json:"display_width_px,omitempty"`
+	DisplayNumber   int `json:"display_number,omitempty"`
 }
 
 // request
@@ -624,7 +624,7 @@ func (client *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionReque
 				switch v := event.(type) {
 				case *types.ResponseStreamMemberChunk:
 
-					Log.Info("payload", string(v.Value.Bytes))
+					Log.Debug("payload", string(v.Value.Bytes))
 
 					var resp ClaudeMessageCompletionStreamEvent
 					err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(&resp)

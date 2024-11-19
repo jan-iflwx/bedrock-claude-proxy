@@ -18,15 +18,21 @@ func NewConfigFromLocal(filename string) (*Config, error) {
 }
 
 func (config *Config) MarginWithENV() {
-	if len(config.WebRoot) <= 0 {
-		config.WebRoot = os.Getenv("WEB_ROOT")
+	webRoot := os.Getenv("WEB_ROOT")
+	if len(webRoot) > 0 {
+		config.WebRoot = webRoot
 	}
-	if len(config.Listen) <= 0 {
-		config.Listen = os.Getenv("HTTP_LISTEN")
+
+	httpListen := os.Getenv("HTTP_LISTEN")
+	if len(httpListen) > 0 {
+		config.Listen = httpListen
 	}
-	if len(config.APIKey) <= 0 {
-		config.APIKey = os.Getenv("API_KEY")
+
+	apiKey := os.Getenv("API_KEY")
+	if len(apiKey) > 0 {
+		config.APIKey = apiKey
 	}
+
 	envBedrockConfig := LoadBedrockConfigWithEnv()
 	if config.BedrockConfig == nil {
 		config.BedrockConfig = envBedrockConfig
