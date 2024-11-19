@@ -35,7 +35,7 @@ func NewHttpService(conf *Config) *HTTPService {
 }
 
 func (service *HTTPService) RedirectSwagger(writer http.ResponseWriter, request *http.Request) {
-	http.Redirect(writer, request, "/swagger/", http.StatusMovedPermanently)
+	http.Redirect(writer, request, "https://docs.anthropic.com/en/api/getting-started", http.StatusMovedPermanently)
 }
 
 func (service *HTTPService) NotFoundHandle(writer http.ResponseWriter, request *http.Request) {
@@ -236,9 +236,9 @@ func (service *HTTPService) Start() {
 	apiRouter.HandleFunc("/complete", service.HandleComplete)
 	apiRouter.HandleFunc("/messages", service.HandleMessageComplete)
 
-	rHandler.HandleFunc("/", service.RedirectSwagger)
+	rHandler.HandleFunc("/swagger", service.RedirectSwagger)
 	rHandler.PathPrefix("/").Handler(http.StripPrefix("/",
-		http.FileServer(http.Dir(fmt.Sprintf("%s", service.conf.WebRoot)))))
+		http.FileServer(http.Dir(service.conf.WebRoot))))
 	rHandler.NotFoundHandler = http.HandlerFunc(service.NotFoundHandle)
 
 	Log.Info("http service starting")
