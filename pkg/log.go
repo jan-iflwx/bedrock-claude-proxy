@@ -7,7 +7,7 @@ import (
 
 var Log = logging.MustGetLogger("BedrockProxy")
 
-func init() {
+func InitLogger() {
 	format := logging.MustStringFormatter(
 		`BedrockProxy %{color} %{shortfunc} %{level:.4s} %{shortfile} %{id:03x}%{color:reset} %{message}`,
 	)

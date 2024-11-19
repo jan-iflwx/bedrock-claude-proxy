@@ -34,6 +34,7 @@ func main() {
 
 	conf.MarginWithENV()
 
+	pkg.InitLogger()
 	pkg.Log.Debug("show config detail:")
 	pkg.Log.Debug(conf.ToJSON())
 
