@@ -166,7 +166,7 @@ func (service *HTTPService) HandleMessageComplete(writer http.ResponseWriter, re
 		service.ResponseError(err, writer)
 		return
 	}
-	// get anthropic-version,x-api-key from request
+	// get anthropic-version, anthropic-beta from request
 	anthropicVersion := request.Header.Get("anthropic-version")
 	if len(anthropicVersion) > 0 {
 		req.AnthropicVersion = anthropicVersion
@@ -175,13 +175,13 @@ func (service *HTTPService) HandleMessageComplete(writer http.ResponseWriter, re
 	if len(anthropicBeta) > 0 {
 		req.AnthropicBeta = anthropicBeta
 	}
-
-	//anthropicKey := request.Header.Get("x-api-key")
-
+	
+	/*
 	Log.Debug(string(body))
 	for _, msg := range req.Messages {
 		Log.Debugf("%+v", msg)
 	}
+	*/
 
 	bedrockClient := NewBedrockClient(service.conf.BedrockConfig)
 	response, err := bedrockClient.MessageCompletion(&req)
@@ -210,15 +210,15 @@ func (service *HTTPService) APIKeyMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		apiKey := request.Header.Get("x-api-key")
-		Log.Debugf("API key in header: %s", apiKey)
+		//Log.Debugf("API key in header: %s", apiKey)
 		if apiKey == "" {
-			service.ResponseError(fmt.Errorf("invalid api key"), writer)
+			service.ResponseError(fmt.Errorf("empty api key"), writer)
 			return
 		}
 
 		// 这里可以添加更多的 API Key 验证逻辑
 		if apiKey != APIKey {
-			service.ResponseError(fmt.Errorf("invalid api key"), writer)
+			service.ResponseError(fmt.Errorf("invalid api key: %s", apiKey), writer)
 			return
 		}
 

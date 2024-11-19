@@ -27,11 +27,10 @@ func (config *Config) MarginWithENV() {
 	if len(config.APIKey) <= 0 {
 		config.APIKey = os.Getenv("API_KEY")
 	}
+	envBedrockConfig := LoadBedrockConfigWithEnv()
 	if config.BedrockConfig == nil {
-		config.BedrockConfig = LoadBedrockConfigWithEnv()
+		config.BedrockConfig = envBedrockConfig
 	} else {
-		envBedrockConfig := LoadBedrockConfigWithEnv()
-
 		if envBedrockConfig.AccessKey != "" {
 			config.BedrockConfig.AccessKey = envBedrockConfig.AccessKey
 		}
@@ -77,6 +76,7 @@ func (c *Config) load(filename string) error {
 	return err
 }
 
+// used for debug only
 func (c *Config) ToJSON() (string, error) {
 	jsonBin, err := json.Marshal(c)
 	if err != nil {
@@ -87,6 +87,7 @@ func (c *Config) ToJSON() (string, error) {
 	return str.String(), nil
 }
 
+// unused
 func (c *Config) Save(saveAs string) error {
 	file, err := os.Create(saveAs)
 	if err != nil {

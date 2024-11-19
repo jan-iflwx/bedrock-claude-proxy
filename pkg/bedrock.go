@@ -17,6 +17,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
+// ------------------
+// bedrock相关API
+// ------------------
+// bedrock config struct
 type BedrockConfig struct {
 	AccessKey                string            `json:"access_key"`
 	SecretKey                string            `json:"secret_key"`
@@ -29,14 +33,13 @@ type BedrockConfig struct {
 	AnthropicDefaultVersion  string            `json:"anthropic_default_version"`
 }
 
-func (config *BedrockConfig) GetInvokeEndpoint(modelId string) string {
-	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke", config.Region, modelId)
+// bedrock client struct
+type BedrockClient struct {
+	config *BedrockConfig
+	client *bedrock.Client
 }
 
-func (config *BedrockConfig) GetInvokeStreamEndpoint(modelId string, region string) string {
-	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke-with-response-stream", region, modelId)
-}
-
+// parse mapping str
 func ParseMappingsFromStr(raw string) map[string]string {
 	mappings := map[string]string{}
 	pairs := strings.Split(raw, ",")
@@ -54,6 +57,7 @@ func ParseMappingsFromStr(raw string) map[string]string {
 	return mappings
 }
 
+// load bedrock config from env
 func LoadBedrockConfigWithEnv() *BedrockConfig {
 	return &BedrockConfig{
 		AccessKey:                os.Getenv("AWS_BEDROCK_ACCESS_KEY"),
@@ -68,342 +72,17 @@ func LoadBedrockConfigWithEnv() *BedrockConfig {
 	}
 }
 
-type BedrockClient struct {
-	config *BedrockConfig
-	client *bedrock.Client
+// invoke endpoint api
+func (config *BedrockConfig) GetInvokeEndpoint(modelId string) string {
+	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke", config.Region, modelId)
 }
 
-type ClaudeTextCompletionRequest struct {
-	Prompt            string   `json:"prompt,omitempty"`
-	MaxTokensToSample int      `json:"max_tokens_to_sample,omitempty"`
-	Temperature       float64  `json:"temperature,omitempty"`
-	StopSequences     []string `json:"stop_sequences,omitempty"`
-	TopP              float64  `json:"top_p,omitempty"`
-	TopK              int      `json:"top_k,omitempty"`
-	Stream            bool     `json:"-"`
-	Model             string   `json:"-"`
+// invoke endpoint stream api
+func (config *BedrockConfig) GetInvokeStreamEndpoint(modelId string, region string) string {
+	return fmt.Sprintf("bedrock-runtime.%s.amazonaws.com/model/%s/invoke-with-response-stream", region, modelId)
 }
 
-func (request *ClaudeTextCompletionRequest) UnmarshalJSON(data []byte) error {
-	type Alias ClaudeTextCompletionRequest
-	tmp := &struct {
-		*Alias
-
-		Stream bool   `json:"stream"`
-		Model  string `json:"model"`
-	}{
-		Stream: false,
-		Alias:  (*Alias)(request),
-	}
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	request.Stream = tmp.Stream
-	request.Model = tmp.Model
-
-	//Log.Debug("ClaudeTextCompletionRequest UnmarshalJSON")
-	//Log.Debug(tests.ToJSON(tmp))
-	//Log.Debugf("%+v", this)
-
-	return nil
-}
-
-type ClaudeMessageCompletionRequestContentSource struct {
-	Type      string `json:"type,omitempty"`
-	MediaType string `json:"media_type,omitempty"`
-	Data      string `json:"data,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestContent struct {
-	Type      string                                       `json:"type,omitempty"`
-	Name      string                                       `json:"name,omitempty"`
-	Id        string                                       `json:"id,omitempty"`
-	Text      string                                       `json:"text,omitempty"`
-	ToolUseID string                                       `json:"tool_use_id,omitempty"`
-	IsError   string                                       `json:"is_error,omitempty"`
-	Source    *ClaudeMessageCompletionRequestContentSource `json:"source,omitempty"`
-	Content   json.RawMessage                              `json:"content,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestMessage struct {
-	Role    string          `json:"role,omitempty"`
-	Content json.RawMessage `json:"content,omitempty"`
-	Text    string          `json:"text,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestMetadata struct {
-	UserId string `json:"user_id,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestInputSchema struct {
-	Type       string                                                   `json:"type,omitempty"`
-	Properties map[string]*ClaudeMessageCompletionRequestPropertiesItem `json:"properties,omitempty"`
-	Required   []string                                                 `json:"required,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestPropertiesItem struct {
-	Type        string `json:"type,omitempty"`
-	Description string `json:"description,omitempty"`
-}
-
-type ClaudeMessageCompletionRequestTools struct {
-	Type        string                                     `json:"type,omitempty"`
-	Name        string                                     `json:"name,omitempty"`
-	Description string                                     `json:"description,omitempty"`
-	InputSchema *ClaudeMessageCompletionRequestInputSchema `json:"input_schema,omitempty"`
-	// add for computer use
-	DisplayHeightPx int                                    `json:"display_height_px,omitempty"`
-	DisplayWidthPx int                                     `json:"display_width_px,omitempty"`
-	DisplayNumber int                                      `json:"display_number,omitempty"`
-}
-
-type ClaudeMessageCompletionRequest struct {
-	Temperature      float64                                  `json:"temperature,omitempty"`
-	StopSequences    []string                                 `json:"stop_sequences,omitempty"`
-	TopP             float64                                  `json:"top_p,omitempty"`
-	TopK             int                                      `json:"top_k,omitempty"`
-	Stream           bool                                     `json:"-"`
-	Model            string                                   `json:"-"`
-	AnthropicVersion string                                   `json:"anthropic_version,omitempty"`
-	AnthropicBeta    []string                                 `json:"anthropic_beta,omitempty"`
-	MaxToken         int                                      `json:"max_tokens,omitempty"`
-	System           json.RawMessage                          `json:"system,omitempty"`
-	Messages         []*ClaudeMessageCompletionRequestMessage `json:"messages,omitempty"`
-	Metadata         *ClaudeMessageCompletionRequestMetadata  `json:"-"`
-	Tools            []*ClaudeMessageCompletionRequestTools   `json:"tools,omitempty"`
-}
-
-func (request *ClaudeMessageCompletionRequest) UnmarshalJSON(data []byte) error {
-	type Alias ClaudeMessageCompletionRequest
-	tmp := &struct {
-		*Alias
-
-		Stream   bool                                    `json:"stream"`
-		Model    string                                  `json:"model"`
-		Metadata *ClaudeMessageCompletionRequestMetadata `json:"metadata"`
-		Tools    []*ClaudeMessageCompletionRequestTools  `json:"tools"`
-	}{
-		Stream: false,
-		Alias:  (*Alias)(request),
-	}
-
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	request.Metadata = tmp.Metadata
-	if tmp.Tools != nil {
-		request.Tools = tmp.Tools
-	} else {
-		request.Tools = []*ClaudeMessageCompletionRequestTools{}
-	}
-	if request.TopK < 0 {
-		request.TopK = 0
-	}
-	if request.TopP < 0 {
-		request.TopP = 0.0
-	}
-	request.Stream = tmp.Stream
-	request.Model = tmp.Model
-
-	//Log.Debug("ClaudeMessageCompletionRequest UnmarshalJSON")
-	//Log.Debug(tests.ToJSON(tmp))
-	//Log.Debugf("%+v", this)
-
-	return nil
-}
-
-type ClaudeTextCompletionResponse struct {
-	Completion string `json:"completion,omitempty"`
-	StopReason string `json:"stop_reason,omitempty"`
-	Stop       string `json:"stop,omitempty"`
-	Id         string `json:"id,omitempty"`
-	Model      string `json:"model,omitempty"`
-}
-
-type ClaudeMessageCompletionResponse struct {
-	ClaudeMessageStop
-
-	Id      string                       `json:"id,omitempty"`
-	Model   string                       `json:"model,omitempty"`
-	Type    string                       `json:"type,omitempty"`
-	Role    string                       `json:"role,omitempty"`
-	Content []*ClaudeMessageContentBlock `json:"content,omitempty"`
-	Usage   *ClaudeMessageUsage          `json:"usage,omitempty"`
-}
-
-type ISSEDecoder interface {
-	GetBytes() []byte
-	GetEvent() string
-	GetText() string
-}
-
-type ClaudeTextCompletionStreamEvent struct {
-	Type       string `json:"type,omitempty"`
-	StopReason string `json:"stop_reason,omitempty"`
-	Model      string `json:"model,omitempty"`
-	Completion string `json:"completion,omitempty"`
-	Raw        []byte `json:"-"`
-}
-
-func (event *ClaudeTextCompletionStreamEvent) GetBytes() []byte {
-	return event.Raw
-}
-
-func (event *ClaudeTextCompletionStreamEvent) GetEvent() string {
-	return event.Type
-}
-
-func (event *ClaudeTextCompletionStreamEvent) GetText() string {
-	return event.Completion
-}
-
-type ClaudeMessageUsage struct {
-	InputTokens  int `json:"input_tokens,omitempty"`
-	OutputTokens int `json:"output_tokens,omitempty"`
-}
-
-type ClaudeMessageStop struct {
-	StopReason   string `json:"stop_reason,omitempty"`
-	StopSequence string `json:"stop_sequence,omitempty"`
-}
-type ClaudeMessageInfo struct {
-	ClaudeMessageStop
-
-	Id      string              `json:"id,omitempty"`
-	Type    string              `json:"type,omitempty"`
-	Role    string              `json:"role,omitempty"`
-	Content []string            `json:"content,omitempty"`
-	Model   string              `json:"model,omitempty"`
-	Usage   *ClaudeMessageUsage `json:"usage,omitempty"`
-}
-type ClaudeMessageContentBlock struct {
-	Type  string      `json:"type,omitempty"`
-	Text  string      `json:"text,omitempty"`
-	Id    string      `json:"id,omitempty"`
-	Name  string      `json:"name,omitempty"`
-	Input interface{} `json:"input,omitempty"`
-}
-type ClaudeMessageDelta struct {
-	ClaudeMessageStop
-
-	Type        string `json:"type,omitempty"`
-	Text        string `json:"text,omitempty"`
-	PartialJson string `json:"partial_json,omitempty"`
-}
-
-type ClaudeMessageCompletionStreamEvent struct {
-	Type         string                     `json:"type,omitempty"`
-	Model        string                     `json:"model,omitempty"`
-	Completion   string                     `json:"completion,omitempty"`
-	Message      *ClaudeMessageInfo         `json:"message,omitempty"`
-	Usage        *ClaudeMessageUsage        `json:"usage,omitempty"`
-	Index        int                        `json:"index,omitempty"`
-	ContentBlock *ClaudeMessageContentBlock `json:"content_block,omitempty"`
-	Delta        *ClaudeMessageDelta        `json:"delta,omitempty"`
-	Raw          []byte                     `json:"-"`
-}
-
-func (event *ClaudeMessageCompletionStreamEvent) GetBytes() []byte {
-	return event.Raw
-}
-
-func (event *ClaudeMessageCompletionStreamEvent) GetEvent() string {
-	return event.Type
-}
-
-func (event *ClaudeMessageCompletionStreamEvent) GetText() string {
-	if event.Delta != nil {
-		return event.Delta.Text
-	}
-	return event.Completion
-}
-
-type CompleteTextResponse struct {
-	stream   bool
-	Response *ClaudeTextCompletionResponse
-	Events   <-chan ISSEDecoder
-}
-
-func NewStreamCompleteTextResponse(queue <-chan ISSEDecoder) *CompleteTextResponse {
-	return &CompleteTextResponse{
-		stream: true,
-		Events: queue,
-	}
-}
-
-type IStreamableResponse interface {
-	IsStream() bool
-	GetResponse() interface{}
-	GetEvents() <-chan ISSEDecoder
-}
-
-func NewCompleteTextResponse(response *ClaudeTextCompletionResponse) *CompleteTextResponse {
-	return &CompleteTextResponse{
-		stream:   false,
-		Response: response,
-	}
-}
-
-func (response *CompleteTextResponse) IsStream() bool {
-	return response.stream
-}
-
-func (response *CompleteTextResponse) GetResponse() interface{} {
-	return response.Response
-}
-
-func (response *CompleteTextResponse) GetEvents() <-chan ISSEDecoder {
-	return response.Events
-}
-
-type MessageCompleteResponse struct {
-	stream   bool
-	Response *ClaudeMessageCompletionResponse
-	Events   <-chan ISSEDecoder
-}
-
-func NewStreamMessageCompleteResponse(queue <-chan ISSEDecoder) *MessageCompleteResponse {
-	return &MessageCompleteResponse{
-		stream: true,
-		Events: queue,
-	}
-}
-
-func NewMessageCompleteResponse(response *ClaudeMessageCompletionResponse) *MessageCompleteResponse {
-	return &MessageCompleteResponse{
-		stream:   false,
-		Response: response,
-	}
-}
-
-func (response *MessageCompleteResponse) IsStream() bool {
-	return response.stream
-}
-
-func (response *MessageCompleteResponse) GetResponse() interface{} {
-	return response.Response
-}
-
-func (response *MessageCompleteResponse) GetEvents() <-chan ISSEDecoder {
-	return response.Events
-}
-
-func NewSSERaw(encoder ISSEDecoder) []byte {
-	return []byte(fmt.Sprintf("event: %s\ndata: %s\n\n", encoder.GetEvent(), string(encoder.GetBytes())))
-}
-
-type ClaudeTextCompletionStreamEventList []*ClaudeTextCompletionStreamEvent
-
-func (eventList *ClaudeTextCompletionStreamEventList) Completion() string {
-	var completion string
-	for _, event := range *eventList {
-		completion += event.Completion
-	}
-	return completion
-}
-
+// create bedrock client from config
 func NewBedrockClient(config *BedrockConfig) *BedrockClient {
 	staticProvider := credentials.NewStaticCredentialsProvider(config.AccessKey, config.SecretKey, "")
 
@@ -457,6 +136,140 @@ func NewBedrockClient(config *BedrockConfig) *BedrockClient {
 	return &BedrockClient{
 		config: config,
 		client: bedrock.NewFromConfig(bedrock_cfg),
+	}
+}
+
+// ---------------------
+// common struct
+// ---------------------
+// sse
+type ISSEDecoder interface {
+	GetBytes() []byte
+	GetEvent() string
+	GetText() string
+}
+
+type IStreamableResponse interface {
+	IsStream() bool
+	GetResponse() interface{}
+	GetEvents() <-chan ISSEDecoder
+}
+
+func NewSSERaw(encoder ISSEDecoder) []byte {
+	return []byte(fmt.Sprintf("event: %s\ndata: %s\n\n", encoder.GetEvent(), string(encoder.GetBytes())))
+}
+
+// ---------------------
+// text completion api
+// ---------------------
+// request
+type ClaudeTextCompletionRequest struct {
+	Prompt            string   `json:"prompt,omitempty"`
+	MaxTokensToSample int      `json:"max_tokens_to_sample,omitempty"`
+	Temperature       float64  `json:"temperature,omitempty"`
+	StopSequences     []string `json:"stop_sequences,omitempty"`
+	TopP              float64  `json:"top_p,omitempty"`
+	TopK              int      `json:"top_k,omitempty"`
+	Stream            bool     `json:"-"`
+	Model             string   `json:"-"`
+}
+
+// response
+type ClaudeTextCompletionResponse struct {
+	Completion string `json:"completion,omitempty"`
+	StopReason string `json:"stop_reason,omitempty"`
+	Stop       string `json:"stop,omitempty"`
+	Id         string `json:"id,omitempty"`
+	Model      string `json:"model,omitempty"`
+}
+
+// unused
+func (request *ClaudeTextCompletionRequest) UnmarshalJSON(data []byte) error {
+	type Alias ClaudeTextCompletionRequest
+	tmp := &struct {
+		*Alias
+
+		Stream bool   `json:"stream"`
+		Model  string `json:"model"`
+	}{
+		Stream: false,
+		Alias:  (*Alias)(request),
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	request.Stream = tmp.Stream
+	request.Model = tmp.Model
+
+	//Log.Debug("ClaudeTextCompletionRequest UnmarshalJSON")
+	//Log.Debug(tests.ToJSON(tmp))
+	//Log.Debugf("%+v", this)
+
+	return nil
+}
+
+// sse event
+type ClaudeTextCompletionStreamEvent struct {
+	Type       string `json:"type,omitempty"`
+	StopReason string `json:"stop_reason,omitempty"`
+	Model      string `json:"model,omitempty"`
+	Completion string `json:"completion,omitempty"`
+	Raw        []byte `json:"-"`
+}
+
+// response
+type CompleteTextResponse struct {
+	stream   bool
+	Response *ClaudeTextCompletionResponse
+	Events   <-chan ISSEDecoder
+}
+
+func (event *ClaudeTextCompletionStreamEvent) GetBytes() []byte {
+	return event.Raw
+}
+
+func (event *ClaudeTextCompletionStreamEvent) GetEvent() string {
+	return event.Type
+}
+
+func (event *ClaudeTextCompletionStreamEvent) GetText() string {
+	return event.Completion
+}
+
+func NewCompleteTextResponse(response *ClaudeTextCompletionResponse) *CompleteTextResponse {
+	return &CompleteTextResponse{
+		stream:   false,
+		Response: response,
+	}
+}
+
+func (response *CompleteTextResponse) IsStream() bool {
+	return response.stream
+}
+
+func (response *CompleteTextResponse) GetResponse() interface{} {
+	return response.Response
+}
+
+func (response *CompleteTextResponse) GetEvents() <-chan ISSEDecoder {
+	return response.Events
+}
+
+type ClaudeTextCompletionStreamEventList []*ClaudeTextCompletionStreamEvent
+
+func (eventList *ClaudeTextCompletionStreamEventList) Completion() string {
+	var completion string
+	for _, event := range *eventList {
+		completion += event.Completion
+	}
+	return completion
+}
+
+func NewStreamCompleteTextResponse(queue <-chan ISSEDecoder) *CompleteTextResponse {
+	return &CompleteTextResponse{
+		stream: true,
+		Events: queue,
 	}
 }
 
@@ -552,6 +365,217 @@ func (client *BedrockClient) CompleteText(req *ClaudeTextCompletionRequest) (ISt
 	return nil, nil
 }
 
+// ---------------------
+// message completion api
+// ---------------------
+// request.messages[]
+type ClaudeMessageCompletionRequestMessage struct {
+	Role    string          `json:"role,omitempty"`
+	Content json.RawMessage `json:"content,omitempty"`
+	Text    string          `json:"text,omitempty"`
+}
+
+// request.metadata
+type ClaudeMessageCompletionRequestMetadata struct {
+	UserId string `json:"user_id,omitempty"`
+}
+
+// request.tools.input_schema.properties
+type ClaudeMessageCompletionRequestPropertiesItem struct {
+	Type        string `json:"type,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// request.tools.input_schema
+type ClaudeMessageCompletionRequestInputSchema struct {
+	Type       string                                                   `json:"type,omitempty"`
+	Properties map[string]*ClaudeMessageCompletionRequestPropertiesItem `json:"properties,omitempty"`
+	Required   []string                                                 `json:"required,omitempty"`
+}
+
+// request.tools
+type ClaudeMessageCompletionRequestTools struct {
+	Type        string                                     `json:"type,omitempty"`
+	Name        string                                     `json:"name,omitempty"`
+	Description string                                     `json:"description,omitempty"`
+	InputSchema *ClaudeMessageCompletionRequestInputSchema `json:"input_schema,omitempty"`
+	// add for computer use
+	DisplayHeightPx int                                    `json:"display_height_px,omitempty"`
+	DisplayWidthPx int                                     `json:"display_width_px,omitempty"`
+	DisplayNumber int                                      `json:"display_number,omitempty"`
+}
+
+// request
+type ClaudeMessageCompletionRequest struct {
+	Temperature      float64                                  `json:"temperature,omitempty"`
+	StopSequences    []string                                 `json:"stop_sequences,omitempty"`
+	TopP             float64                                  `json:"top_p,omitempty"`
+	TopK             int                                      `json:"top_k,omitempty"`
+	Stream           bool                                     `json:"-"`
+	Model            string                                   `json:"-"`
+	AnthropicVersion string                                   `json:"anthropic_version,omitempty"`
+	AnthropicBeta    []string                                 `json:"anthropic_beta,omitempty"`
+	MaxToken         int                                      `json:"max_tokens,omitempty"`
+	System           json.RawMessage                          `json:"system,omitempty"`
+	Messages         []*ClaudeMessageCompletionRequestMessage `json:"messages,omitempty"`
+	Metadata         *ClaudeMessageCompletionRequestMetadata  `json:"-"`
+	Tools            []*ClaudeMessageCompletionRequestTools   `json:"tools,omitempty"`
+}
+
+// unused
+func (request *ClaudeMessageCompletionRequest) UnmarshalJSON(data []byte) error {
+	type Alias ClaudeMessageCompletionRequest
+	tmp := &struct {
+		*Alias
+
+		Stream   bool                                    `json:"stream"`
+		Model    string                                  `json:"model"`
+		Metadata *ClaudeMessageCompletionRequestMetadata `json:"metadata"`
+		Tools    []*ClaudeMessageCompletionRequestTools  `json:"tools"`
+	}{
+		Stream: false,
+		Alias:  (*Alias)(request),
+	}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	request.Metadata = tmp.Metadata
+	if tmp.Tools != nil {
+		request.Tools = tmp.Tools
+	} else {
+		request.Tools = []*ClaudeMessageCompletionRequestTools{}
+	}
+	if request.TopK < 0 {
+		request.TopK = 0
+	}
+	if request.TopP < 0 {
+		request.TopP = 0.0
+	}
+	request.Stream = tmp.Stream
+	request.Model = tmp.Model
+
+	//Log.Debug("ClaudeMessageCompletionRequest UnmarshalJSON")
+	//Log.Debug(tests.ToJSON(tmp))
+	//Log.Debugf("%+v", this)
+
+	return nil
+}
+
+// response.stop_reason + response.stop_sequence
+type ClaudeMessageStop struct {
+	StopReason   string `json:"stop_reason,omitempty"`
+	StopSequence string `json:"stop_sequence,omitempty"`
+}
+
+// response.message
+type ClaudeMessageInfo struct {
+	ClaudeMessageStop
+
+	Id      string              `json:"id,omitempty"`
+	Type    string              `json:"type,omitempty"`
+	Role    string              `json:"role,omitempty"`
+	Content []string            `json:"content,omitempty"`
+	Model   string              `json:"model,omitempty"`
+	Usage   *ClaudeMessageUsage `json:"usage,omitempty"`
+}
+
+// response.content
+type ClaudeMessageContentBlock struct {
+	Type  string      `json:"type,omitempty"`
+	Text  string      `json:"text,omitempty"`
+	Id    string      `json:"id,omitempty"`
+	Name  string      `json:"name,omitempty"`
+	Input interface{} `json:"input,omitempty"`
+}
+
+// response.usage
+type ClaudeMessageUsage struct {
+	InputTokens  int `json:"input_tokens,omitempty"`
+	OutputTokens int `json:"output_tokens,omitempty"`
+}
+
+// response
+type ClaudeMessageCompletionResponse struct {
+	ClaudeMessageStop
+
+	Id      string                       `json:"id,omitempty"`
+	Model   string                       `json:"model,omitempty"`
+	Type    string                       `json:"type,omitempty"`
+	Role    string                       `json:"role,omitempty"`
+	Content []*ClaudeMessageContentBlock `json:"content,omitempty"`
+	Usage   *ClaudeMessageUsage          `json:"usage,omitempty"`
+}
+
+// sse
+type ClaudeMessageDelta struct {
+	ClaudeMessageStop
+
+	Type        string `json:"type,omitempty"`
+	Text        string `json:"text,omitempty"`
+	PartialJson string `json:"partial_json,omitempty"`
+}
+
+type ClaudeMessageCompletionStreamEvent struct {
+	Type         string                     `json:"type,omitempty"`
+	Model        string                     `json:"model,omitempty"`
+	Completion   string                     `json:"completion,omitempty"`
+	Message      *ClaudeMessageInfo         `json:"message,omitempty"`
+	Usage        *ClaudeMessageUsage        `json:"usage,omitempty"`
+	Index        int                        `json:"index,omitempty"`
+	ContentBlock *ClaudeMessageContentBlock `json:"content_block,omitempty"`
+	Delta        *ClaudeMessageDelta        `json:"delta,omitempty"`
+	Raw          []byte                     `json:"-"`
+}
+
+func (event *ClaudeMessageCompletionStreamEvent) GetBytes() []byte {
+	return event.Raw
+}
+
+func (event *ClaudeMessageCompletionStreamEvent) GetEvent() string {
+	return event.Type
+}
+
+func (event *ClaudeMessageCompletionStreamEvent) GetText() string {
+	if event.Delta != nil {
+		return event.Delta.Text
+	}
+	return event.Completion
+}
+
+type MessageCompleteResponse struct {
+	stream   bool
+	Response *ClaudeMessageCompletionResponse
+	Events   <-chan ISSEDecoder
+}
+
+func NewStreamMessageCompleteResponse(queue <-chan ISSEDecoder) *MessageCompleteResponse {
+	return &MessageCompleteResponse{
+		stream: true,
+		Events: queue,
+	}
+}
+
+func NewMessageCompleteResponse(response *ClaudeMessageCompletionResponse) *MessageCompleteResponse {
+	return &MessageCompleteResponse{
+		stream:   false,
+		Response: response,
+	}
+}
+
+func (response *MessageCompleteResponse) IsStream() bool {
+	return response.stream
+}
+
+func (response *MessageCompleteResponse) GetResponse() interface{} {
+	return response.Response
+}
+
+func (response *MessageCompleteResponse) GetEvents() <-chan ISSEDecoder {
+	return response.Events
+}
+
 func (client *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionRequest) (IStreamableResponse, error) {
 	modelId := req.Model
 	mappedModel, exist := client.config.ModelMappings[modelId]
@@ -600,7 +624,7 @@ func (client *BedrockClient) MessageCompletion(req *ClaudeMessageCompletionReque
 				switch v := event.(type) {
 				case *types.ResponseStreamMemberChunk:
 
-					//Log.Info("payload", string(v.Value.Bytes))
+					Log.Info("payload", string(v.Value.Bytes))
 
 					var resp ClaudeMessageCompletionStreamEvent
 					err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(&resp)
