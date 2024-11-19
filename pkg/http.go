@@ -3,9 +3,10 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type HttpConfig struct {
@@ -175,12 +176,12 @@ func (service *HTTPService) HandleMessageComplete(writer http.ResponseWriter, re
 	if len(anthropicBeta) > 0 {
 		req.AnthropicBeta = anthropicBeta
 	}
-	
+
 	/*
-	Log.Debug(string(body))
-	for _, msg := range req.Messages {
-		Log.Debugf("%+v", msg)
-	}
+		Log.Debug(string(body))
+		for _, msg := range req.Messages {
+			Log.Debugf("%+v", msg)
+		}
 	*/
 
 	bedrockClient := NewBedrockClient(service.conf.BedrockConfig)
@@ -210,7 +211,7 @@ func (service *HTTPService) APIKeyMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		apiKey := request.Header.Get("x-api-key")
-		//Log.Debugf("API key in header: %s", apiKey)
+
 		if apiKey == "" {
 			service.ResponseError(fmt.Errorf("empty api key"), writer)
 			return
@@ -218,7 +219,8 @@ func (service *HTTPService) APIKeyMiddleware(next http.Handler) http.Handler {
 
 		// 这里可以添加更多的 API Key 验证逻辑
 		if apiKey != APIKey {
-			service.ResponseError(fmt.Errorf("invalid api key: %s", apiKey), writer)
+			Log.Debugf("Invalid API key in header: %s", apiKey)
+			service.ResponseError(fmt.Errorf("invalid api key"), writer)
 			return
 		}
 

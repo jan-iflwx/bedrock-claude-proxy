@@ -278,6 +278,34 @@ def test_prompt_cache(client):
     print(response)
     assert response.error is None
 
+def test_prompt_cache_stream(client):
+    stream = client.beta.prompt_caching.messages.create(
+        model=PROXY_MODEL_ID,
+        max_tokens=1024,
+        stream=True,
+        system=[
+        {
+            "type": "text",
+            "text": "You are an AI assistant tasked with analyzing literary works. Your goal is to provide insightful commentary on themes, characters, and writing style.\n",
+        },
+        {
+            "type": "text",
+            "text": "<the entire contents of 'Pride and Prejudice'>",
+            "cache_control": {"type": "ephemeral"}
+        }
+        ],
+        messages=[{"role": "user", "content": "Analyze the major themes in 'Pride and Prejudice'."}],
+    )
+    collected_message = ""
+    print("\n==== chunks begin ====")
+    for chunk in stream:
+        print(chunk)
+        print(chunk.type)
+        if chunk.type == "content_block_delta":
+            collected_message += chunk.delta.text
+    print("---- chunks end----")
+    assert len(collected_message) > 0
+    
 # --------------
 # 3.langchain调用
 # --------------
